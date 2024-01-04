@@ -127,7 +127,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--root_path', '-r', type=str, default='./Cholangiocarcinoma/L')
-    parser.add_argument('--dataset_hyper', '-dh', type=str, default='MHSI')
+    parser.add_argument('--dataset_hyper', '-dh', type=str, default='MHSI/HMSI')
     parser.add_argument('--dataset_mask', '-dm', type=str, default='Mask')
     parser.add_argument('--dataset_divide', '-dd', type=str, default='four_fold.json')
     parser.add_argument('--device', '-dev', type=str, default='cuda:0')
