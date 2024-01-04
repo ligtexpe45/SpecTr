@@ -59,7 +59,7 @@ def main(args):
     images_root_path = os.path.join(root_path, dataset_hyper)
     mask_root_path = os.path.join(root_path, dataset_mask)
     dataset_json = os.path.join(root_path, dataset_divide)
-    with open(dataset_json, 'r') as load_f:
+    with open(dataset_divide, 'r') as load_f:
         dataset_dict = json.load(load_f)
 
     #Data Augmentation
