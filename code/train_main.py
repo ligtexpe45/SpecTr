@@ -67,7 +67,7 @@ def main(args):
     device = torch.device(device)
 
     if os.path.exists(f'{output_path}/{experiment_name}') == False:
-        os.mkdir(f'{output_path}/{experiment_name}')
+        os.mkdirs(f'{output_path}/{experiment_name}')
     save_dict(os.path.join(f'{output_path}/{experiment_name}', 'args.csv'), args.__dict__)
 
     channels = channels_index
