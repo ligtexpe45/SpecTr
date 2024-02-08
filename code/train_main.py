@@ -112,11 +112,11 @@ def main(args):
         val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.png') for i in dataset_dict[f'fold{k}']]
 
         train_db = Data_Generate_Cho(train_images_path, train_masks_path, cutting=cutting,
-                                            transform=transform, channels=channels, outtype=outtype)
+                                            transform=transform, channels=channels, outtype=outtype, envi_type=envi_type)
         train_loader = DataLoader(train_db, batch_size=batch, shuffle=True, num_workers=worker)
 
         val_db = Data_Generate_Cho(val_images_path, val_masks_path, cutting=None, transform=None,
-                                          channels=channels, outtype=outtype)
+                                          channels=channels, outtype=outtype, envi_type=envi_type)
         val_loader = DataLoader(val_db, batch_size=1, shuffle=False, num_workers=worker)
 
         model = SpecTr(choose_translayer=choose_translayer,
