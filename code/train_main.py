@@ -57,6 +57,7 @@ def main(args):
     init_values = args.init_values
     classes = args.classes
     mask_extension = args.mask_extension
+    envi_type = args.envi_type
 
     images_root_path = os.path.join(root_path, dataset_hyper)
     mask_root_path = os.path.join(root_path, dataset_mask)
@@ -275,6 +276,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_every_epoch', '-see', default=False, action='store_true')
     parser.add_argument('--classes', '-c', default=1, type=int)
     parser.add_argument('--mask_extension', '-me', default='.png', type=str)
+    parser.add_argument('--envi_type', '-et', default='img', type=str)
 
     args = parser.parse_args()
     main(args)

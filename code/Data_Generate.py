@@ -24,13 +24,14 @@ from einops import repeat
 class Data_Generate_Cho(Dataset):#
     def __init__(self, img_paths, seg_paths=None,
                  cutting=None, transform=None,
-                 channels=None, outtype='3d'):
+                 channels=None, outtype='3d', envi_type='img'):
         self.img_paths = img_paths
         self.seg_paths = seg_paths
         self.transform = transform
         self.cutting = cutting
         self.channels = channels
         self.outtype = outtype
+        self.envi_type = envi_type
 
     def __getitem__(self,index):
         img_path = self.img_paths[index]
@@ -39,7 +40,7 @@ class Data_Generate_Cho(Dataset):#
             mask = np.load(mask_path)
         else:
             mask = cv2.imread(mask_path, 0)/255
-        img = envi.open(img_path)[:, :, :]
+        img = envi.open(img_path, image=img_path.replace('hdr', self.envi_type))[:, :, :]
         img = img[:, :, self.channels] if self.channels is not None else img
 
         if img.shape != mask.shape:
