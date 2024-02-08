@@ -56,6 +56,7 @@ def main(args):
     decode_choice = args.decode_choice
     init_values = args.init_values
     classes = args.classes
+    mask_extension = args.mask_extension
 
     images_root_path = os.path.join(root_path, dataset_hyper)
     mask_root_path = os.path.join(root_path, dataset_mask)
@@ -105,7 +106,7 @@ def main(args):
             f'fold{train_fold[2]}']
 
         train_images_path = [os.path.join(images_root_path, i) for i in train_file_dict]
-        train_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.png') for i in train_file_dict]
+        train_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in train_file_dict]
         val_images_path = [os.path.join(images_root_path, i) for i in dataset_dict[f'fold{k}']]
         val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.png') for i in dataset_dict[f'fold{k}']]
 
@@ -273,6 +274,7 @@ if __name__ == '__main__':
     parser.add_argument('--init_values', '-initv', type=float, default=0.01)
     parser.add_argument('--save_every_epoch', '-see', default=False, action='store_true')
     parser.add_argument('--classes', '-c', default=1, type=int)
+    parser.add_argument('--mask_extension', '-me', default='.png', type=str)
 
     args = parser.parse_args()
     main(args)

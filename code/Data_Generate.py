@@ -35,7 +35,10 @@ class Data_Generate_Cho(Dataset):#
     def __getitem__(self,index):
         img_path = self.img_paths[index]
         mask_path = self.seg_paths[index]
-        mask = cv2.imread(mask_path, 0)/255
+        if mask_path.endswith('.npz'):
+            mask = np.load(mask_path)
+        else:
+            mask = cv2.imread(mask_path, 0)/255
         img = envi.open(img_path)[:, :, :]
         img = img[:, :, self.channels] if self.channels is not None else img
 
