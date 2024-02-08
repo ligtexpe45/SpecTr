@@ -37,7 +37,7 @@ class Data_Generate_Cho(Dataset):#
         img_path = self.img_paths[index]
         mask_path = self.seg_paths[index]
         if mask_path.endswith('.npz'):
-            mask = np.load(mask_path)
+            mask = np.load(mask_path)['gt']
         else:
             mask = cv2.imread(mask_path, 0)/255
         img = envi.open(img_path, image=img_path.replace('hdr', self.envi_type))[:, :, :]
