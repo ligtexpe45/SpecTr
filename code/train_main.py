@@ -55,6 +55,7 @@ def main(args):
     device = args.device
     decode_choice = args.decode_choice
     init_values = args.init_values
+    classes = args.classes
 
     images_root_path = os.path.join(root_path, dataset_hyper)
     mask_root_path = os.path.join(root_path, dataset_mask)
@@ -72,7 +73,7 @@ def main(args):
 
     channels = channels_index
     spectral_number = spectral_number if channels is None else len(channels_index)
-    multi_class = 1
+    multi_class = classes
 
     dice_criterion = smp.losses.DiceLoss(eps=1., mode='binary', from_logits=False)
     bce_criterion = nn.BCELoss()
@@ -271,6 +272,7 @@ if __name__ == '__main__':
     parser.add_argument('--decode_choice', '-dc', default='3D', choices=['3D', 'decoder_2D'])
     parser.add_argument('--init_values', '-initv', type=float, default=0.01)
     parser.add_argument('--save_every_epoch', '-see', default=False, action='store_true')
+    parser.add_argument('--classes', '-c', default=1, type=int)
 
     args = parser.parse_args()
     main(args)
