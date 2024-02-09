@@ -109,7 +109,7 @@ def main(args):
         train_images_path = [os.path.join(images_root_path, i) for i in train_file_dict]
         train_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in train_file_dict]
         val_images_path = [os.path.join(images_root_path, i) for i in dataset_dict[f'fold{k}']]
-        val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.png') for i in dataset_dict[f'fold{k}']]
+        val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in dataset_dict[f'fold{k}']]
 
         train_db = Data_Generate_Cho(train_images_path, train_masks_path, cutting=cutting,
                                             transform=transform, channels=channels, outtype=outtype, envi_type=envi_type)
