@@ -26,7 +26,7 @@ from argument import Transform
 from local_utils.misc import AverageMeter
 from local_utils.tools import EarlyStopping
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
-from local_utils.metrics import iou, dice
+from local_utils.metrics import iou, dice, multi_iou
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -80,7 +80,7 @@ def main(args):
     dice_criterion = smp.losses.DiceLoss(eps=1., mode='binary', from_logits=False)
     bce_criterion = nn.BCELoss()
 
-    Miou = iou
+    Miou = iou if multi_class == 1 else multi_iou
     MDice = dice
 
     #For slide window operation in the validation stage
@@ -112,11 +112,13 @@ def main(args):
         val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in dataset_dict[f'fold{k}']]
 
         train_db = Data_Generate_Cho(train_images_path, train_masks_path, cutting=cutting,
-                                            transform=transform, channels=channels, outtype=outtype, envi_type=envi_type)
+                                            transform=transform, channels=channels, outtype=outtype, envi_type=envi_type
+                                     , multi_class=multi_class)
         train_loader = DataLoader(train_db, batch_size=batch, shuffle=True, num_workers=worker)
 
         val_db = Data_Generate_Cho(val_images_path, val_masks_path, cutting=None, transform=None,
-                                          channels=channels, outtype=outtype, envi_type=envi_type)
+                                          channels=channels, outtype=outtype, envi_type=envi_type
+                                   , multi_class=multi_class)
         val_loader = DataLoader(val_db, batch_size=1, shuffle=False, num_workers=worker)
 
         model = SpecTr(choose_translayer=choose_translayer,
@@ -151,7 +153,12 @@ def main(args):
                     image, label = sample
                     image, label = image.to(device), label.to(device)
                     out = model(image)
-                    loss = dice_criterion(out, label) * 0.5 + bce_criterion(out, label) * 0.5
+
+                    if multi_class == 1:
+                        loss = dice_criterion(out, label) * 0.5 + bce_criterion(out, label) * 0.5
+                    else:
+                        label = label.squeeze(1).long()
+                        loss = nn.CrossEntropyLoss()(out, label)
 
                     optimizer.zero_grad()
                     loss.backward()
@@ -159,9 +166,12 @@ def main(args):
                     train_losses.update(loss.item())
                     out = out.cpu().detach().numpy()
                     label = label.cpu().detach().numpy()
-                    out = np.where(out > 0.5, 1, 0)
-                    label = np.where(label > 0.5, 1, 0)
 
+                    if multi_class == 1:
+                        out = np.where(out > 0.5, 1, 0)
+                        label = np.where(label > 0.5, 1, 0)
+                    else:
+                        out = np.argmax(out, axis=1)
                     train_iou = train_iou + np.mean(
                         [Miou(out[b], label[b]) for b in range(len(out))])
 
@@ -192,6 +202,8 @@ def main(args):
                 for i in range(0, len(patch_idx), batch):
                     with torch.no_grad():
                         output = model(torch.stack([image[x] for x in patch_idx[i:i + batch]])[None].to(device)).squeeze(1)
+                        if multi_class != 1:
+                            output = torch.argmax(output, dim=1)
                     for j in range(output.size(0)):
                        num_collect[patch_idx[i + j][1:]] += 1
                        pred_collect[patch_idx[i + j][1:]] += output[j]
@@ -200,14 +212,20 @@ def main(args):
                 out[torch.isnan(out)] = 0
 
                 out, label = out.cpu().detach().numpy()[None][None], label.cpu().detach().numpy()
+                if multi_class == 1:
+                    out = np.where(out > 0.5, 1, 0)
+                    label = np.where(label > 0.5, 1, 0)
+                else:
+                    out = np.round(out)
+                for b in range(multi_class):
+                    x = np.where(out == b, 1, 0)
+                    y = np.where(label == b, 1, 0)
+                    val_dice = val_dice + MDice(x, y)
+                    val_iou = val_iou + iou(x, y)
 
-                out = np.where(out > 0.5, 1, 0)
-                label = np.where(label > 0.5, 1, 0)
-                val_dice = val_dice + MDice(out, label)
-                val_iou = val_iou + Miou(out, label)
+            val_iou = val_iou / (idx + 1) / multi_class
+            val_dice = val_dice / (idx + 1) / multi_class
 
-            val_iou = val_iou / (idx + 1)
-            val_dice = val_dice / (idx + 1)
 
             print('epoch {}/{}\t LR:{}\t train loss:{}\t train_iou:{}\t val_dice:{}\t val_iou:{}' \
                   .format(epoch + 1, epochs, optimizer.param_groups[0]['lr'], train_losses.avg, train_iou, val_dice,
