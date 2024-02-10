@@ -24,7 +24,8 @@ from einops import repeat
 class Data_Generate_Cho(Dataset):#
     def __init__(self, img_paths, seg_paths=None,
                  cutting=None, transform=None,
-                 channels=None, outtype='3d', envi_type='img'):
+                 channels=None, outtype='3d', envi_type='img',
+                 multi_class= 1):
         self.img_paths = img_paths
         self.seg_paths = seg_paths
         self.transform = transform
