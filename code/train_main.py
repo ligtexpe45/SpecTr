@@ -217,7 +217,7 @@ def main(args):
                     label = np.where(label > 0.5, 1, 0)
                 else:
                     out = np.round(out)
-                for b in range(multi_class):
+                for b in np.unique(label):
                     x = np.where(out == b, 1, 0)
                     y = np.where(label == b, 1, 0)
                     val_dice = val_dice + MDice(x, y)
