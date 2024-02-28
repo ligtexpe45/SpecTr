@@ -18,6 +18,7 @@ import random
 import math
 from scipy.ndimage import zoom
 import warnings
+import tiff
 warnings.filterwarnings('ignore')
 from einops import repeat
 
@@ -41,14 +42,30 @@ class Data_Generate_Cho(Dataset):#
         if mask_path.endswith('.npz'):
             mask = np.load(mask_path)['gt']
             mask[mask > 8] = 0
+        elif mask_path.endswith('.hdr'):
+            mask = envi.open(mask_path, image=mask_path.replace('.hdr', ''))[:, :, 0]
+            mask = np.squeeze(mask)
+        elif mask_path.endswith('.tif'):
+            masks = tiff.read_mtiff(mask_path)
+            y_seg = tiff.mtiff_to_2d_arr(masks)
+            mask = cv2.resize(y_seg, (320, 256), interpolation=cv2.INTER_NEAREST)
         else:
-            mask = cv2.imread(mask_path, 0)/255
-        img = envi.open(img_path, image=img_path.replace('hdr', self.envi_type))[:, :, :]
+            mask = (cv2.imread(mask_path, 0) / 255).astype(np.uint8)
+
+        if img_path.endswith('.hdr'):
+            img = envi.open(img_path, image=img_path.replace('.hdr', self.envi_type))[:, :, :]
+        elif img_path.endswith('.tif'):
+            x, _, _, _ = tiff.read_stiff(img_path)
+            x = cv2.resize(x, (320, 256), interpolation=cv2.INTER_NEAREST)
+            chosen_channels = np.linspace(0, x.shape[2] - 1, num=51, dtype=int)
+            new_x = [x[:, :, channel] for channel in chosen_channels]
+            img = np.stack(new_x, axis=2)
+
         img = img[:, :, self.channels] if self.channels is not None else img
 
-        if mask_path.endswith('.npz'):
-            mask = np.delete(mask, 445, 0)
-            img = np.delete(img, 445, 0)
+        # if mask_path.endswith('.npz'):
+        #     mask = np.delete(mask, 445, 0)
+        #     img = np.delete(img, 445, 0)
 
         if img.shape != mask.shape:
             mask = cv2.resize(mask, (img.shape[1], img.shape[0]))

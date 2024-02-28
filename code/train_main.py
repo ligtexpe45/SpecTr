@@ -58,6 +58,7 @@ def main(args):
     classes = args.classes
     mask_extension = args.mask_extension
     envi_type = args.envi_type
+    dataset = args.dataset
 
     images_root_path = os.path.join(root_path, dataset_hyper)
     mask_root_path = os.path.join(root_path, dataset_mask)
@@ -106,10 +107,21 @@ def main(args):
         train_file_dict = dataset_dict[f'fold{train_fold[0]}'] + dataset_dict[f'fold{train_fold[1]}'] + dataset_dict[
             f'fold{train_fold[2]}']
 
-        train_images_path = [os.path.join(images_root_path, i) for i in train_file_dict]
-        train_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in train_file_dict]
-        val_images_path = [os.path.join(images_root_path, i) for i in dataset_dict[f'fold{k}']]
-        val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in dataset_dict[f'fold{k}']]
+        if dataset == "brain":
+            train_images_path = [os.path.join(root_path, i, i, "raw.hdr") for i in train_file_dict]
+            train_masks_path = [os.path.join(root_path, i, i, "gtMap.hdr") for i in train_file_dict]
+            val_images_path = [os.path.join(root_path, i, i, "raw.hdr") for i in dataset_dict[f'fold{k}']]
+            val_masks_path = [os.path.join(root_path, i, i, "gtMap.hdr") for i in dataset_dict[f'fold{k}']]
+        elif dataset == "dental":
+            train_images_path = [os.path.join(root_path, i + ".tif") for i in train_file_dict]
+            train_masks_path = [os.path.join(root_path, i + "_masks.tif") for i in train_file_dict]
+            val_images_path = [os.path.join(root_path, i + ".tif") for i in dataset_dict[f'fold{k}']]
+            val_masks_path = [os.path.join(root_path, i + "_masks.tif") for i in dataset_dict[f'fold{k}']]
+        else:
+            train_images_path = [os.path.join(images_root_path, i) for i in train_file_dict]
+            train_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in train_file_dict]
+            val_images_path = [os.path.join(images_root_path, i) for i in dataset_dict[f'fold{k}']]
+            val_masks_path = [os.path.join(mask_root_path, f'{i[:-4]}.{mask_extension}') for i in dataset_dict[f'fold{k}']]
 
         train_db = Data_Generate_Cho(train_images_path, train_masks_path, cutting=cutting,
                                             transform=transform, channels=channels, outtype=outtype, envi_type=envi_type
@@ -295,6 +307,6 @@ if __name__ == '__main__':
     parser.add_argument('--classes', '-c', default=1, type=int)
     parser.add_argument('--mask_extension', '-me', default='.png', type=str)
     parser.add_argument('--envi_type', '-et', default='img', type=str)
-
+    parser.add_argument('--dataset', '-d', default='MDC', type=str)
     args = parser.parse_args()
     main(args)
