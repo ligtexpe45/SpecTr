@@ -229,13 +229,16 @@ def main(args):
                 if multi_class == 1:
                     out = np.where(out > 0.5, 1, 0)
                     label = np.where(label > 0.5, 1, 0)
+                    val_dice = val_dice + MDice(out, label)
+                    val_iou = val_iou + iou(out, label)
                 else:
                     out = np.round(out)
-                for b in np.unique(label):
-                    x = np.where(out == b, 1, 0)
-                    y = np.where(label == b, 1, 0)
-                    val_dice = val_dice + MDice(x, y)
-                    val_iou = val_iou + iou(x, y)
+                    for b in np.unique(label):
+                        x = np.where(out == b, 1, 0)
+                        y = np.where(label == b, 1, 0)
+                        val_dice = val_dice + MDice(x, y)
+                        val_iou = val_iou + iou(x, y)
+                        # print(b, MDice(x, y), iou(x, y))
 
             val_iou = val_iou / (idx + 1) / multi_class
             val_dice = val_dice / (idx + 1) / multi_class
