@@ -213,7 +213,9 @@ def main(args):
                 pred_collect = torch.zeros((shape_h, shape_w)).to(device)
                 for i in range(0, len(patch_idx), batch):
                     with torch.no_grad():
-                        output = model(torch.stack([image[x] for x in patch_idx[i:i + batch]])[None].to(device)).squeeze(1)
+                        bat = torch.stack([image[x] for x in patch_idx[i:i + batch]])[None].to(device)
+                        bat = bat.permute(1, 0, 2, 3, 4)
+                        output = model(bat).squeeze(1)
                         if multi_class != 1:
                             output = torch.argmax(output, dim=1)
                     for j in range(output.size(0)):
