@@ -12,6 +12,7 @@ import json
 import numpy as np
 import pandas as pd
 import segmentation_models_pytorch as smp
+from sklearn.metrics import confusion_matrix
 
 from spectr import SpecTr
 from torch import optim
@@ -59,6 +60,7 @@ def main(args):
     mask_extension = args.mask_extension
     envi_type = args.envi_type
     dataset = args.dataset
+    remove_cm_values = args.remove_cm_values
 
     images_root_path = os.path.join(root_path, dataset_hyper)
     mask_root_path = os.path.join(root_path, dataset_mask)
@@ -144,12 +146,12 @@ def main(args):
         scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=5, T_mult=2, eta_min=1e-8)
 
         # only record, we are not use early stop.
-        early_stopping_val = EarlyStopping(patience=1000, verbose=True,
-                                           path=os.path.join(f'{output_path}/{experiment_name}',
-                                                             f'best_fold{k}_{experiment_name}.pth'))
+        early_stopping_val = EarlyStopping(patience=1000, verbose=True, output_path=output_path, experiment_name=experiment_name, fold=k)
 
         history = {'epoch': [], 'LR': [], 'train_loss': [], 'train_iou': [], 'val_dice': [], 'val_iou': [],
                    'val_count': []}
+
+        confusion_matrix_history = []
 
 
         for epoch in range(epochs):
@@ -203,6 +205,7 @@ def main(args):
             print('now start evaluate ...')
             model.eval()
             val_losses.reset()
+            outs, labels = [], []
             for idx, sample in enumerate(tqdm(val_loader)):
                 image, label = sample
                 image = image.squeeze()
@@ -239,6 +242,8 @@ def main(args):
                         val_dice = val_dice + MDice(x, y)
                         val_iou = val_iou + iou(x, y)
                         # print(b, MDice(x, y), iou(x, y))
+                outs.extend(out.flatten())
+                labels.extend(label.flatten())
 
             val_iou = val_iou / (idx + 1) / multi_class
             val_dice = val_dice / (idx + 1) / multi_class
@@ -255,8 +260,11 @@ def main(args):
             history['epoch'].append(epoch + 1)
             history['LR'].append(optimizer.param_groups[0]['lr'])
 
+            cm = confusion_matrix(labels, outs, labels=range(classes))
+            confusion_matrix_history.append(pd.DataFrame(cm, index=range(classes), columns=range(classes)))
+
             scheduler.step()
-            early_stopping_val(-val_dice, model)
+            early_stopping_val(-val_dice, model, confusion_matrix_history[-1])
             history['val_count'].append(early_stopping_val.counter)
 
             if args.save_every_epoch:
@@ -275,6 +283,9 @@ def main(args):
 
             history_pd = pd.DataFrame(history)
             history_pd.to_csv(os.path.join(f'{output_path}/{experiment_name}', f'log_fold{k}.csv'), index=False)
+            cm_pd = pd.concat(confusion_matrix_history, keys=range(1, epoch + 2))
+            cm_pd.to_csv(os.path.join(f'{output_path}/{experiment_name}', f'confusion_matrix_fold{k}.csv'),
+                         index_label=['Epoch'], index=True)
         history_pd = pd.DataFrame(history)
         history_pd.to_csv(os.path.join(f'{output_path}/{experiment_name}', f'log_fold{k}.csv'), index=False)
 
@@ -313,5 +324,6 @@ if __name__ == '__main__':
     parser.add_argument('--mask_extension', '-me', default='.png', type=str)
     parser.add_argument('--envi_type', '-et', default='img', type=str)
     parser.add_argument('--dataset', '-d', default='MDC', type=str)
+    parser.add_argument('--remove_cm_values', '-rcm', action='store_false', default=True)
     args = parser.parse_args()
     main(args)

@@ -61,6 +61,13 @@ class Data_Generate_Cho(Dataset):#
             new_x = [x[:, :, channel] for channel in chosen_channels]
             img = np.stack(new_x, axis=2)
 
+        if mask_path.endswith('.hdr'):
+            h = 320
+            selected_channels = np.linspace(0, img.shape[2] - 1, 300, dtype=int)
+            img = np.stack([img[:, :, i] for i in selected_channels], axis=-1)
+            img = cv2.resize(img, (h, h), interpolation=cv2.INTER_NEAREST)
+            mask = cv2.resize(mask, (h, h), interpolation=cv2.INTER_NEAREST)
+
         img = img[:, :, self.channels] if self.channels is not None else img
 
         # if mask_path.endswith('.npz'):
