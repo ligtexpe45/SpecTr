@@ -172,7 +172,11 @@ def main(args):
                         loss = dice_criterion(out, label) * 0.5 + bce_criterion(out, label) * 0.5
                     else:
                         label = label.squeeze(1).long()
-                        loss = nn.CrossEntropyLoss()(out, label)
+                        if dataset == "brain":
+                            hasLabel = (label != 0).long()
+                            loss = nn.CrossEntropyLoss()(out * hasLabel, label * hasLabel)
+                        else:
+                            loss = nn.CrossEntropyLoss()(out, label)
 
                     optimizer.zero_grad()
                     loss.backward()
@@ -185,7 +189,11 @@ def main(args):
                         out = np.where(out > 0.5, 1, 0)
                         label = np.where(label > 0.5, 1, 0)
                     else:
+                        if dataset == "brain":
+                            out[:, 0] = 0
                         out = np.argmax(out, axis=1)
+                        if dataset == "brain":
+                            out[label == 0] = 0
                     train_iou = train_iou + np.mean(
                         [Miou(out[b], label[b]) for b in range(len(out))])
 
@@ -220,7 +228,11 @@ def main(args):
                         bat = bat.permute(1, 0, 2, 3, 4)
                         output = model(bat).squeeze(1)
                         if multi_class != 1:
+                            if dataset == "brain":
+                                output[:, 0] = 0
                             output = torch.argmax(output, dim=1)
+                            if dataset == "brain":
+                                output[label == 0] = 0
                     for j in range(output.size(0)):
                        num_collect[patch_idx[i + j][1:]] += 1
                        pred_collect[patch_idx[i + j][1:]] += output[j]
