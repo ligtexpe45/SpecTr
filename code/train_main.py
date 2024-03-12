@@ -228,9 +228,9 @@ def main(args):
                         bat = bat.permute(1, 0, 2, 3, 4)
                         output = model(bat).squeeze(1)
                         if multi_class != 1:
-                            output = torch.argmax(output, dim=1)
                             if dataset == "brain":
-                                output[label == 0] = 0
+                                output[:, 0] = 0
+                            output = torch.argmax(output, dim=1)
                     for j in range(output.size(0)):
                        num_collect[patch_idx[i + j][1:]] += 1
                        pred_collect[patch_idx[i + j][1:]] += output[j]
