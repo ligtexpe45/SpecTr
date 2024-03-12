@@ -173,8 +173,8 @@ def main(args):
                     else:
                         label = label.squeeze(1).long()
                         if dataset == "brain":
-                            hasLabel = (label != 0).long()
-                            loss = nn.CrossEntropyLoss()(out * hasLabel, label * hasLabel)
+                            hasLabel = (label != 0).unsqueeze(1).long()
+                            loss = nn.CrossEntropyLoss()(out * hasLabel, label)
                         else:
                             loss = nn.CrossEntropyLoss()(out, label)
 
@@ -228,8 +228,6 @@ def main(args):
                         bat = bat.permute(1, 0, 2, 3, 4)
                         output = model(bat).squeeze(1)
                         if multi_class != 1:
-                            if dataset == "brain":
-                                output[:, 0] = 0
                             output = torch.argmax(output, dim=1)
                             if dataset == "brain":
                                 output[label == 0] = 0
@@ -239,6 +237,9 @@ def main(args):
 
                 out = pred_collect / num_collect.float()
                 out[torch.isnan(out)] = 0
+                if dataset == "brain":
+                    tmp = label.squeeze()
+                    out[tmp == 0] = 0
 
                 out, label = out.cpu().detach().numpy()[None][None], label.cpu().detach().numpy()
                 if multi_class == 1:
